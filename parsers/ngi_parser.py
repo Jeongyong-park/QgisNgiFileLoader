@@ -178,6 +178,33 @@ class NGIParser(BaseParser):
                             "coordinates": [x, y]
                         }
                         i += 1
+                    elif line == 'NETWORKCHAIN' or line == 'NETWORK CHAIN':
+                        i += 1
+                        coords, i = self.parse_coordinates(lines, i)
+                        parsed_data[current_layer][current_record] = {
+                            "type": "MultiLineString",
+                            "coordinates": [coords]
+                        }
+                    elif line == 'MULTIPOINT':
+                        i += 1
+                        coords, i = self.parse_coordinates(lines, i)
+                        parsed_data[current_layer][current_record] = {
+                            "type": "MultiPoint",
+                            "coordinates": coords
+                        }
+                    elif line == 'TEXT':
+                        i += 1
+                        line = lines[i].strip()
+                        try:
+                            x, y = map(float, line.split())
+                            parsed_data[current_layer][current_record] = {
+                                "type": "Point",
+                                "coordinates": [x, y],
+                                "properties": {"text_type": True}
+                            }
+                        except ValueError:
+                            self.logger.warning(f"Failed to parse text point: {line}")
+                        i += 1
                 i += 1
                 
         return parsed_data
@@ -217,3 +244,66 @@ class NGIParser(BaseParser):
     def parse_value(self, value: str) -> str:
         """Parse and return string value"""
         return value.strip().strip('"')  # remove double quotation and space
+
+    def parse_geometry_type(self, lines: List[str], start_idx: int) -> Tuple[GeometryType, int]:
+        """Parse geometry type from GEOMETRIC_METADATA section"""
+        i = start_idx
+        while i < len(lines):
+            line = lines[i].strip()
+            if line == '$GEOMETRIC_METADATA':
+                i += 1
+                if i >= len(lines):
+                    break
+                    
+                shapetypelist = lines[i].strip().upper()
+                if not shapetypelist.startswith('MASK('):
+                    break
+                    
+                # MASK(LINESTRING,POLYGON) 형식에서 타입 추출
+                shapetypelist = shapetypelist[5:-1]  # MASK( 와 ) 제거
+                
+                # POLYGON이 포함되어 있으면 POLYGON 우선
+                if 'POLYGON' in shapetypelist:
+                    return GeometryType.MULTIPOLYGON, i + 1
+                    
+                # 콤마로 구분된 경우 첫번째 타입 사용
+                pos = shapetypelist.find(',')
+                if pos > 0:
+                    shapetype = shapetypelist[:pos]
+                else:
+                    shapetype = shapetypelist
+                    
+                # 지오메트리 타입 매핑
+                type_mapping = {
+                    'TEXT': GeometryType.TEXT,
+                    'POINT': GeometryType.POINT,
+                    'MULTIPOINT': GeometryType.MULTIPOINT,
+                    'LINESTRING': GeometryType.MULTILINESTRING,
+                    'MULTILINESTRING': GeometryType.MULTILINESTRING,
+                    'MULTILINE': GeometryType.MULTILINESTRING,
+                    'NETWORKCHAIN': GeometryType.NETWORKCHAIN,
+                    'NETWORK CHAIN': GeometryType.NETWORKCHAIN,
+                    'POLYGON': GeometryType.MULTIPOLYGON,
+                    'MULTIPOLYGON': GeometryType.MULTIPOLYGON
+                }
+                
+                return type_mapping.get(shapetype, GeometryType.UNKNOWN), i + 1
+            i += 1
+        return GeometryType.UNKNOWN, start_idx
+
+    def parse_bounds(self, lines: List[str], start_idx: int) -> Tuple[List[float], int]:
+        """Parse bounding box coordinates"""
+        i = start_idx
+        while i < len(lines):
+            line = lines[i].strip()
+            if line.startswith('BOUND('):
+                # BOUND(150609.210000, 203279.010000, 152265.620000, 205171.560000)
+                coords_str = line[6:-1]  # BOUND( 와 ) 제거
+                try:
+                    x1, y1, x2, y2 = map(float, coords_str.split(','))
+                    return [x1, y1, x2, y2], i + 1
+                except ValueError:
+                    self.logger.warning(f"Failed to parse bounds: {line}")
+                    return [], i + 1
+            i += 1
+        return [], start_idx

@@ -10,6 +10,8 @@ class GeometryType(Enum):
     MULTIPOINT = 4
     MULTILINESTRING = 5
     MULTIPOLYGON = 6
+    TEXT = 7
+    NETWORKCHAIN = 8
 
 class FieldDefinition(TypedDict):
     name: str
