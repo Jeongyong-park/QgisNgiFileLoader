@@ -33,4 +33,3 @@ class LayerDefinition(TypedDict):
 class GeoFeature(TypedDict):
     geometry: dict
     properties: dict
-
