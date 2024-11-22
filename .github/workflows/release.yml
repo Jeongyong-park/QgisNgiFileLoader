@@ -25,19 +25,26 @@ jobs:
         python -m pip install --upgrade pip
         pip install setuptools
         pip install pb_tool
+        pip install PyQt5
+        pip install qgis-plugin-ci
     
     - name: Build plugin
       run: |
-        pb_tool zip
+        mkdir -p dist
+        pb_tool clean
+        pb_tool compile
+        pb_tool zip --output-dir dist
     
     - name: List files
-      run: ls -la
+      run: |
+        ls -la
+        ls -la dist/
     
     - name: Find zip file
       id: find_zip
       run: |
-        ZIP_FILE=$(find . -name "*.zip" -type f -printf "%f\n")
-        echo "ZIP_FILE=${ZIP_FILE}" >> $GITHUB_ENV
+        ZIP_FILE=$(find dist -name "*.zip" -type f -printf "%f\n")
+        echo "ZIP_FILE=dist/${ZIP_FILE}" >> $GITHUB_ENV
     
     - name: Get version from tag
       id: get_version
