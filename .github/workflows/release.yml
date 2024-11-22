@@ -31,7 +31,7 @@ jobs:
     - name: Build plugin
       run: |
         mkdir -p dist
-        pb_tool clean
+        echo "y" | pb_tool clean
         pb_tool compile
         pb_tool zip --output-dir dist
     
