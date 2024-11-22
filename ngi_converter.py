@@ -1,5 +1,6 @@
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication  # type: ignore
 from .ngi_processing_provider import NGIProcessingProvider
+
 
 class NGIConverterPlugin:
     def __init__(self, iface):
