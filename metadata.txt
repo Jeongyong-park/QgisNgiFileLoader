@@ -1,5 +1,5 @@
 [general]
-name=NgiFileLoader
+name=NGI File Loader
 qgisMinimumVersion=3.0
 description=NGI Format by Korean National Geographic Information Institude(NGII) to GeoPackage converter / 한국국토지리원의 NGI 파일을 GeoPackage로 변환하는 QGIS 플러그인
 version=1.0
