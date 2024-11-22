@@ -1,47 +1,36 @@
-from typing import TypedDict, Dict, List, Any
-from dataclasses import dataclass
+from typing import TypedDict, List, Literal
 from enum import Enum
+
+__all__ = ["GeometryType", "FieldDefinition", "LayerDefinition", "GeoFeature"]
 
 
 class GeometryType(Enum):
-    UNKNOWN = 0
-    POINT = 1
-    LINESTRING = 2
-    POLYGON = 3
-    MULTIPOINT = 4
-    MULTILINESTRING = 5
-    MULTIPOLYGON = 6
-    TEXT = 7
-    NETWORKCHAIN = 8
+    POINT = "Point"
+    LINESTRING = "LineString"
+    POLYGON = "Polygon"
+    MULTIPOINT = "MultiPoint"
+    MULTILINESTRING = "MultiLineString"
+    MULTIPOLYGON = "MultiPolygon"
+    TEXT = "Text"
+    NETWORKCHAIN = "NetworkChain"
+    UNKNOWN = "Unknown"
 
 
 class FieldDefinition(TypedDict):
     name: str
-    type: str
+    type: Literal["STRING", "INTEGER", "FLOAT", "DOUBLE", "DATE"]
     width: int
     precision: int
     nullable: bool
 
 
-@dataclass
-class LayerDefinition:
+class LayerDefinition(TypedDict):
     name: str
     fields: List[FieldDefinition]
     geometry_type: GeometryType
 
 
-class GeoProperties(TypedDict):
-    record_id: str
-    layer_name: str
-    attributes: Dict[str, Any]
-
-
 class GeoFeature(TypedDict):
-    type: str
-    geometry: Dict[str, Any]
-    properties: GeoProperties
+    geometry: dict
+    properties: dict
 
-
-class FeatureCollection(TypedDict):
-    type: str
-    features: List[GeoFeature]

@@ -45,3 +45,5 @@ Thumbs.db
 *.sqlite
 *.db
 *.gpkg
+
+zip_build/
