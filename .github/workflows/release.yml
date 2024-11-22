@@ -33,7 +33,8 @@ jobs:
         mkdir -p dist
         echo "y" | pb_tool clean
         pb_tool compile
-        pb_tool zip --output-dir dist
+        pb_tool zip
+        mv zip_build/*.zip dist/
     
     - name: List files
       run: |
