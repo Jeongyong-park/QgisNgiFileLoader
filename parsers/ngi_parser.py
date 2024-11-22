@@ -18,67 +18,6 @@ def setup_logging():
     )
 
 class NGIParser(BaseParser):
-    def get_ring_direction(self, coords: List[List[float]]) -> int:
-        """
-        Calculate ring direction using winding number
-        Returns:
-         1 for counterclockwise
-        -1 for clockwise
-         0 for invalid/degenerate cases
-        """
-        if len(coords) < 3:
-            return 0
-            
-        # Remove duplicate end point
-        points = coords[:-1] if coords[0] == coords[-1] else coords
-        
-        # Calculate winding number
-        angle_sum = 0.0
-        for i in range(len(points)):
-            p1 = points[i]
-            p2 = points[(i + 1) % len(points)]
-            angle = atan2(p2[1] - p1[1], p2[0] - p1[0])
-            angle_sum += angle
-            
-        # Normalize to [-2π, 2π]
-        angle_sum = angle_sum % (2 * pi)
-        
-        # Determine direction
-        if abs(angle_sum) < 0.1:  # Allow for numerical errors
-            return 0
-        return 1 if angle_sum > 0 else -1
-
-    def ensure_ring_direction(self, coords: List[List[float]], force_ccw: bool = True) -> List[List[float]]:
-        """
-        Ensure ring follows right-hand rule
-        force_ccw: True for outer rings (CCW), False for inner rings (CW)
-        """
-        if len(coords) < 3:
-            return coords
-            
-        # Work with a copy
-        ring = [list(p) for p in coords]
-        
-        # Get current direction
-        direction = self.get_ring_direction(ring)
-        if direction == 0:
-            logger.warning("Invalid or degenerate ring detected")
-            return ring
-            
-        # Check if reversal is needed
-        needs_reversal = (direction < 0) if force_ccw else (direction > 0)
-        
-        if needs_reversal:
-            logger.debug(f"Reversing ring direction (CCW={force_ccw})")
-            ring = ring[:-1] if ring[0] == ring[-1] else ring
-            ring.reverse()
-            
-        # Ensure ring is closed
-        if ring[0] != ring[-1]:
-            ring.append(list(ring[0]))
-            
-        return ring
-
     def parse_coordinates(self, lines: List[str], start_idx: int) -> Tuple[List[List[float]], int]:
         """Parse coordinate data from lines"""
         coordinates = []
@@ -149,17 +88,11 @@ class NGIParser(BaseParser):
                             logger.warning(f"Layer {current_layer}, Record {current_record}: Polygon has less than 4 coordinates")
                             i += 1
                             continue
-                        
-                        fixed_coords = self.ensure_ring_direction(coords, force_ccw=True)
-                        
-                        if self.get_ring_direction(fixed_coords) <= 0:
-                            logger.error(f"Layer {current_layer}, Record {current_record}: Failed to ensure CCW direction")
-                            i += 1
-                            continue
+                                            
                         
                         parsed_data[current_layer][current_record] = {
                             "type": "Polygon",
-                            "coordinates": [fixed_coords]
+                            "coordinates": [coords]
                         }
                         
                     elif line == 'LINESTRING':
@@ -246,50 +179,44 @@ class NGIParser(BaseParser):
         return value.strip().strip('"')  # remove double quotation and space
 
     def parse_geometry_type(self, lines: List[str], start_idx: int) -> Tuple[GeometryType, int]:
-        """Parse geometry type from GEOMETRIC_METADATA section"""
-        i = start_idx
-        while i < len(lines):
-            line = lines[i].strip()
-            if line == '$GEOMETRIC_METADATA':
-                i += 1
-                if i >= len(lines):
-                    break
-                    
-                shapetypelist = lines[i].strip().upper()
-                if not shapetypelist.startswith('MASK('):
-                    break
-                    
-                # MASK(LINESTRING,POLYGON) 형식에서 타입 추출
-                shapetypelist = shapetypelist[5:-1]  # MASK( 와 ) 제거
-                
-                # POLYGON이 포함되어 있으면 POLYGON 우선
-                if 'POLYGON' in shapetypelist:
-                    return GeometryType.MULTIPOLYGON, i + 1
-                    
-                # 콤마로 구분된 경우 첫번째 타입 사용
-                pos = shapetypelist.find(',')
-                if pos > 0:
-                    shapetype = shapetypelist[:pos]
-                else:
-                    shapetype = shapetypelist
-                    
-                # 지오메트리 타입 매핑
-                type_mapping = {
-                    'TEXT': GeometryType.TEXT,
-                    'POINT': GeometryType.POINT,
-                    'MULTIPOINT': GeometryType.MULTIPOINT,
-                    'LINESTRING': GeometryType.MULTILINESTRING,
-                    'MULTILINESTRING': GeometryType.MULTILINESTRING,
-                    'MULTILINE': GeometryType.MULTILINESTRING,
-                    'NETWORKCHAIN': GeometryType.NETWORKCHAIN,
-                    'NETWORK CHAIN': GeometryType.NETWORKCHAIN,
-                    'POLYGON': GeometryType.MULTIPOLYGON,
-                    'MULTIPOLYGON': GeometryType.MULTIPOLYGON
-                }
-                
-                return type_mapping.get(shapetype, GeometryType.UNKNOWN), i + 1
-            i += 1
-        return GeometryType.UNKNOWN, start_idx
+        if len(lines) <= start_idx + 1:
+            raise ValueError("Not enough lines to parse geometry type")
+        
+        line = lines[start_idx + 1]
+        if not line.startswith("MASK(") or not line.endswith(")"):
+            raise ValueError(f"Invalid geometry type format: {line}")
+        
+        type_str = line[5:-1]  # Remove MASK( and )
+        types = [t.strip().upper() for t in type_str.split(",")]
+        
+        if not types or not types[0]:
+            raise ValueError("Empty geometry type")
+        
+        # handle complex types
+        if len(types) > 1:
+            if "POLYGON" in types:
+                return GeometryType.MULTIPOLYGON, start_idx + 2
+            elif "LINESTRING" in types:
+                return GeometryType.MULTILINESTRING, start_idx + 2
+            elif "POINT" in types:
+                return GeometryType.MULTIPOINT, start_idx + 2
+        
+        # handle single type
+        type_mapping = {
+            "POINT": GeometryType.POINT,
+            "LINESTRING": GeometryType.LINESTRING,
+            "POLYGON": GeometryType.POLYGON,
+            "MULTIPOINT": GeometryType.MULTIPOINT,
+            "MULTILINESTRING": GeometryType.MULTILINESTRING,
+            "MULTIPOLYGON": GeometryType.MULTIPOLYGON,
+            "TEXT": GeometryType.TEXT,
+            "NETWORKCHAIN": GeometryType.NETWORKCHAIN
+        }
+        
+        if types[0] not in type_mapping:
+            raise ValueError(f"Invalid geometry type: {types[0]}")
+        
+        return type_mapping[types[0]], start_idx + 2
 
     def parse_bounds(self, lines: List[str], start_idx: int) -> Tuple[List[float], int]:
         """Parse bounding box coordinates"""
@@ -298,7 +225,7 @@ class NGIParser(BaseParser):
             line = lines[i].strip()
             if line.startswith('BOUND('):
                 # BOUND(150609.210000, 203279.010000, 152265.620000, 205171.560000)
-                coords_str = line[6:-1]  # BOUND( 와 ) 제거
+                coords_str = line[6:-1]  # remove BOUND( and )
                 try:
                     x1, y1, x2, y2 = map(float, coords_str.split(','))
                     return [x1, y1, x2, y2], i + 1

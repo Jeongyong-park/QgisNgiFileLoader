@@ -5,24 +5,29 @@ logger = logging.getLogger(__name__)
 
 class FieldParser:
     @staticmethod
-    def parse_value(value: str, field_type: str, encoding: str = 'cp949') -> Optional[Any]:
-        """Parse field value according to its type"""
+    def parse_value(value: str, field_type: str):
         if not value or value == '""':
             return None
             
-        value = value.strip('"')
-        
-        try:
-            if field_type.upper() == 'NUMERIC':
-                return float(value) if '.' in value else int(value)
-            elif field_type.upper() == 'STRING':
-                try:
-                    return value.encode(encoding).decode(encoding)
-                except UnicodeError:
-                    return value
-            else:
-                logger.warning(f"Unknown field type: {field_type}")
-                return value
-        except ValueError:
-            logger.warning(f"Failed to parse value '{value}' as {field_type}")
+        # if field type is string, remove whitespace and quotes
+        if field_type == "STRING":
+            value = value.strip()
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1].strip()
             return value
+        
+        # if field type is numeric, check if it contains non-numeric characters
+        if field_type == "NUMERIC":
+            value = value.strip()
+            # check if it contains non-numeric characters
+            if any(c.isalpha() for c in value):
+                raise ValueError(f"Failed to parse value '{value}' as NUMERIC")
+            
+            try:
+                if '.' in value:
+                    return float(value)
+                return int(value)
+            except (ValueError, TypeError):
+                raise ValueError(f"Failed to parse value '{value}' as NUMERIC")
+        
+        raise ValueError(f"Unsupported field type: {field_type}")
