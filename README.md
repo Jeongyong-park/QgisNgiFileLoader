@@ -1,7 +1,7 @@
 ## NGI File Loader
 
 
-This is a QGIS plugin that loads NGI files from the Korea Land and Geographic Information Institute into QGIS.
+This is a QGIS plugin that loads NGI files from the Korea NGII(National Geographic National Geographic Information Institute) into QGIS.
 
 This is a plugin that loads digital map 2.0 NGI files provided by the [Public Data Portal](https://www.data.go.kr/data/15059719/fileData.do) and the [National Land Information Platform](https://map.ngii.go.kr/ms/map/NlipMap.do?tabGb=total) into QGIS.
 
