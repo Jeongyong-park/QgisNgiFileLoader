@@ -1,0 +1,4 @@
+GDAL==3.9.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+debugpy==1.8.0

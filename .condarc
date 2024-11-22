@@ -1,0 +1,5 @@
+channels:
+  - conda-forge
+  - defaults
+channel_priority: flexible
+pip_interop_enabled: true

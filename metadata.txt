@@ -1,0 +1,15 @@
+[general]
+name=NgiFileLoader
+qgisMinimumVersion=3.0
+description=NGI Format by Korean National Geographic Information Institude(NGII) to GeoPackage converter / 한국국토지리원의 NGI 파일을 GeoPackage로 변환하는 QGIS 플러그인
+version=1.0
+author=Jeongyong Park
+email=kladess@gmail.com
+about=NGI Format by Korean National Geographic Information Institude(NGII) to GeoPackage converter / 한국국토지리원의 NGI 파일을 GeoPackage로 변환하는 QGIS 플러그인
+tracker=https://github.com/Jeongyong-park/QgisNgiFileLoader/issues
+repository=https://github.com/Jeongyong-park/QgisNgiFileLoader
+homepage=https://github.com/Jeongyong-park/QgisNgiFileLoader
+category=Vector
+icon=icon.png
+experimental=False
+deprecated=False
