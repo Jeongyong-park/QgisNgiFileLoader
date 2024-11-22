@@ -22,12 +22,12 @@ mock_ogr.GetDriverByName = MagicMock()
 mock_osr.SpatialReference = MagicMock()
 
 # Register all mock modules
-sys.modules['osgeo'] = MagicMock()
-sys.modules['osgeo.gdal'] = mock_gdal
-sys.modules['osgeo.ogr'] = mock_ogr
-sys.modules['osgeo.osr'] = mock_osr
-sys.modules['osgeo.gdalconst'] = mock_gdalconst
-sys.modules['_gdal'] = MagicMock()
+sys.modules["osgeo"] = MagicMock()
+sys.modules["osgeo.gdal"] = mock_gdal
+sys.modules["osgeo.ogr"] = mock_ogr
+sys.modules["osgeo.osr"] = mock_osr
+sys.modules["osgeo.gdalconst"] = mock_gdalconst
+sys.modules["_gdal"] = MagicMock()
 
 # Add project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

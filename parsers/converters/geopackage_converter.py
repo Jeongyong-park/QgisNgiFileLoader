@@ -1,10 +1,11 @@
 from osgeo import ogr, osr
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 from .base_converter import BaseConverter
 import os
 
 logger = logging.getLogger(__name__)
+
 
 class GeoPackageConverter(BaseConverter):
     def __init__(self) -> None:
@@ -25,7 +26,7 @@ class GeoPackageConverter(BaseConverter):
             "Polygon": ogr.wkbPolygon,
             "MultiPoint": ogr.wkbMultiPoint,
             "MultiLineString": ogr.wkbMultiLineString,
-            "MultiPolygon": ogr.wkbMultiPolygon
+            "MultiPolygon": ogr.wkbMultiPolygon,
         }
         return type_map.get(geom_type, ogr.wkbUnknown)
 
@@ -33,7 +34,7 @@ class GeoPackageConverter(BaseConverter):
         """Adds GeoJSON feature to OGR layer"""
         feature_def = layer.GetLayerDefn()
         feature = ogr.Feature(feature_def)
-        
+
         # Set properties
         properties = feature_data.get("properties", {})
         for i in range(feature_def.GetFieldCount()):
@@ -41,7 +42,7 @@ class GeoPackageConverter(BaseConverter):
             field_name = field_defn.GetName()
             if field_name in properties:
                 feature.SetField(i, str(properties[field_name]))
-        
+
         # Set geometry
         geom_json = feature_data.get("geometry", {})
         if not geom_json:
@@ -57,12 +58,14 @@ class GeoPackageConverter(BaseConverter):
         if layer.CreateFeature(feature) != 0:
             logger.error("Failed to create feature")
 
-    def convert_to_gpkg(self, geojson_data: Dict[str, Dict[str, Any]], output_path: str) -> None:
+    def convert_to_gpkg(
+        self, geojson_data: Dict[str, Dict[str, Any]], output_path: str
+    ) -> None:
         """Converts GeoJSON data to GeoPackage"""
         # Remove existing file if exists
         if os.path.exists(output_path):
             os.remove(output_path)
-        
+
         ds = self.gpkg_driver.CreateDataSource(output_path)
         if ds is None:
             raise RuntimeError(f"Cannot create GeoPackage file: {output_path}")
@@ -81,11 +84,13 @@ class GeoPackageConverter(BaseConverter):
                 # Create layer
                 srs = osr.SpatialReference()
                 srs.ImportFromEPSG(5186)
-                
+
                 # Remove special characters from layer name
-                safe_layer_name = ''.join(c for c in layer_name if c.isalnum() or c in ('_',))
+                safe_layer_name = "".join(
+                    c for c in layer_name if c.isalnum() or c in ("_",)
+                )
                 layer = ds.CreateLayer(safe_layer_name, srs, ogr_geom_type)
-                
+
                 if layer is None:
                     logger.error(f"Failed to create layer: {layer_name}")
                     continue
@@ -105,4 +110,3 @@ class GeoPackageConverter(BaseConverter):
 
         finally:
             ds = None
-                    
