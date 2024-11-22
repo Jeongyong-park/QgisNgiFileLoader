@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,6 +30,15 @@ jobs:
       run: |
         pb_tool zip
     
+    - name: List files
+      run: ls -la
+    
+    - name: Find zip file
+      id: find_zip
+      run: |
+        ZIP_FILE=$(find . -name "*.zip" -type f -printf "%f\n")
+        echo "ZIP_FILE=${ZIP_FILE}" >> $GITHUB_ENV
+    
     - name: Get version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
@@ -34,8 +46,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          *.zip
+        files: ${{ env.ZIP_FILE }}
         name: Release ${{ env.VERSION }}
         draft: false
         prerelease: false
